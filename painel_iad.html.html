@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRT12 · Painel de Desempenho</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:#1E2761; --navy2:#141B4A; --gold:#E6A817;
+  --blue:#2563EB; --teal:#0891B2; --purple:#7C3AED;
+  --green:#16A34A; --red:#DC2626; --amber:#D97706;
+  --bg:#F1F5F9; --surf:#FFFFFF; --brd:#E2E8F0;
+  --text:#1E293B; --muted:#64748B; --light:#94A3B8;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+header{background:var(--navy2);height:62px;padding:0 2rem;display:flex;align-items:center;gap:1.2rem;border-bottom:3px solid var(--gold);position:sticky;top:0;z-index:100;}
+.hbadge{background:var(--gold);color:var(--navy2);font-weight:700;font-size:.75rem;padding:3px 10px;border-radius:3px;letter-spacing:1px;}
+header h1{color:#fff;font-size:1rem;font-weight:600;}
+header h1 span{color:var(--gold);}
+.periodo{margin-left:auto;color:var(--light);font-size:.78rem;font-family:'DM Mono',monospace;}
+
+.controls{background:var(--surf);border-bottom:1px solid var(--brd);padding:.9rem 2rem;display:flex;gap:2rem;align-items:flex-end;flex-wrap:wrap;}
+.ctrl{display:flex;flex-direction:column;gap:.35rem;}
+.ctrl-lbl{font-size:.68rem;font-weight:700;color:var(--light);letter-spacing:1.2px;text-transform:uppercase;}
+
+.seg-tabs{display:flex;gap:.35rem;}
+.seg-tab{padding:6px 15px;border-radius:6px;border:2px solid var(--brd);background:transparent;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s;}
+.seg-tab:hover{border-color:var(--navy);color:var(--navy);}
+.seg-tab.at-1gc{background:var(--blue);border-color:var(--blue);color:#fff;}
+.seg-tab.at-1ge{background:var(--teal);border-color:var(--teal);color:#fff;}
+.seg-tab.at-2g{background:var(--purple);border-color:var(--purple);color:#fff;}
+
+.tipo-wrap{display:flex;gap:.4rem;flex-wrap:wrap;}
+.tipo-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:20px;border:2px solid var(--brd);font-size:.79rem;font-weight:500;color:var(--muted);cursor:pointer;transition:all .15s;user-select:none;background:var(--surf);}
+.tipo-pill:hover{border-color:var(--navy);color:var(--navy);}
+.tipo-pill.on{border-color:var(--blue);background:#EFF6FF;color:var(--blue);}
+.tipo-pill.on .pdot{background:var(--blue);}
+.pdot{width:7px;height:7px;border-radius:50%;background:var(--brd);flex-shrink:0;transition:background .15s;}
+
+.search-input{padding:6px 12px;border:2px solid var(--brd);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.82rem;width:200px;outline:none;transition:border-color .15s;}
+.search-input:focus{border-color:var(--blue);}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.85rem;padding:1.1rem 2rem 0;}
+.kpi{background:var(--surf);border:1px solid var(--brd);border-radius:8px;padding:.85rem 1rem;position:relative;overflow:hidden;}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.kpi.c-blue::after{background:var(--blue);}
+.kpi.c-red::after{background:#EF4444;}
+.kpi.c-amber::after{background:var(--amber);}
+.kpi.c-teal::after{background:var(--teal);}
+.kpi.c-purple::after{background:var(--purple);}
+.kpi-lbl{font-size:.67rem;font-weight:700;color:var(--light);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.1rem;}
+.kpi-lbl2{font-size:.63rem;color:var(--light);margin-bottom:.3rem;font-style:italic;}
+.kpi-val{font-size:1.45rem;font-weight:700;color:var(--text);line-height:1.1;}
+.kpi-val.good{color:var(--green);}.kpi-val.warn{color:var(--amber);}.kpi-val.bad{color:var(--red);}
+.kpi-sub{font-size:.72rem;color:var(--light);margin-top:.2rem;}
+
+.pont-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:.85rem;padding:.6rem 2rem 1.1rem;}
+.pont-card{background:var(--navy2);border-radius:8px;padding:.85rem 1.2rem;display:flex;align-items:center;gap:1rem;}
+.pont-icon{font-size:1.6rem;line-height:1;}
+.pont-info{display:flex;flex-direction:column;}
+.pont-lbl{font-size:.68rem;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;}
+.pont-val{font-size:1.6rem;font-weight:700;color:#fff;line-height:1.1;}
+.pont-val.dest{color:var(--gold);}
+.pont-sub{font-size:.72rem;color:rgba(255,255,255,.4);margin-top:.1rem;}
+
+.tbl-wrap{padding:0 2rem 2.5rem;}
+.tbl-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;}
+.tbl-title{font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;}
+.tbl-count{background:var(--bg);border:1px solid var(--brd);border-radius:20px;padding:2px 12px;font-size:.75rem;color:var(--muted);font-family:'DM Mono',monospace;}
+
+table{width:100%;border-collapse:collapse;background:var(--surf);border-radius:10px;overflow:hidden;border:1px solid var(--brd);font-size:.83rem;}
+thead tr{background:var(--navy);}
+th{padding:10px 12px;text-align:left;color:rgba(255,255,255,.65);font-size:.68rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;white-space:nowrap;user-select:none;transition:color .1s;}
+th:hover{color:var(--gold);}
+th.asc::after{content:' ↑';color:var(--gold);}
+th.desc::after{content:' ↓';color:var(--gold);}
+tbody tr{border-bottom:1px solid var(--brd);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#F8FAFC;}
+td{padding:9px 12px;vertical-align:middle;}
+td.nome{font-weight:600;}
+td.muni{color:var(--muted);font-size:.79rem;}
+
+.tbadge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.68rem;font-weight:700;}
+.tb-vara{background:#EFF6FF;color:var(--blue);}
+.tb-gab{background:#F5F3FF;color:var(--purple);}
+.tb-cejusc{background:#ECFDF5;color:var(--green);}
+.tb-outro{background:#F8FAFC;color:var(--muted);}
+
+td.num{font-family:'DM Mono',monospace;font-size:.8rem;text-align:right;color:var(--muted);}
+td.num.dest{color:var(--text);font-weight:600;}
+
+.ind-cell{min-width:110px;}
+.ind-row{display:flex;align-items:center;gap:7px;}
+.ind-val{font-family:'DM Mono',monospace;font-size:.82rem;font-weight:700;min-width:52px;}
+.ind-val.good{color:var(--green);}.ind-val.warn{color:var(--amber);}.ind-val.bad{color:var(--red);}.ind-val.null{color:var(--light);font-weight:400;}
+.bar{flex:1;height:5px;background:var(--brd);border-radius:3px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:3px;}
+.bar-fill.good{background:var(--green);}.bar-fill.warn{background:var(--amber);}.bar-fill.bad{background:var(--red);}
+
+.empty td{text-align:center;padding:3rem;color:var(--light);font-style:italic;}
+footer{text-align:center;padding:1.2rem;font-size:.72rem;color:var(--light);border-top:1px solid var(--brd);}
+.ext-link{display:inline-flex;align-items:center;gap:.5rem;padding:6px 16px;background:var(--gold);color:var(--navy2);font-weight:700;font-size:.78rem;border-radius:6px;text-decoration:none;letter-spacing:.3px;transition:opacity .15s;}
+.ext-link:hover{opacity:.85;}
+.ext-link svg{flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="hbadge">TRT12</span>
+  <h1>Painel de Desempenho · <span>12ª Região</span></h1>
+  <a class="ext-link" href="https://app.powerbi.com/view?r=eyJrIjoiMGRkZjJhMDUtM2FiMi00ZDViLTk3ODQtOWVkY2I3YTIyMmRkIiwidCI6ImI1NTM5NTJhLTYxNTYtNGNkOC04NTcxLWI3MmYwNDBiMzE2YyJ9" target="_blank" rel="noopener">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    Painel Regional Datajud
+  </a>
+  <span class="periodo">ago/2025–fev/2026 · TCL: mar/2025–fev/2026</span>
+</header>
+
+<div class="controls">
+  <div class="ctrl">
+    <span class="ctrl-lbl">Segmento</span>
+    <div class="seg-tabs" id="seg-tabs">
+      <button class="seg-tab at-1gc" data-seg="1gc">1º Grau Conhecimento</button>
+      <button class="seg-tab" data-seg="1ge">1º Grau Execução</button>
+      <button class="seg-tab" data-seg="2g">2º Grau</button>
+    </div>
+  </div>
+  <div class="ctrl">
+    <span class="ctrl-lbl">Tipo de Unidade</span>
+    <div class="tipo-wrap" id="tipo-wrap"></div>
+  </div>
+  <div class="ctrl">
+    <span class="ctrl-lbl">Buscar</span>
+    <input class="search-input" id="search" type="text" placeholder="Nome ou município...">
+  </div>
+</div>
+
+<div class="kpi-grid" id="kpi-grid"></div>
+<div class="pont-bar" id="pont-bar"></div>
+
+<div class="tbl-wrap">
+  <div class="tbl-hdr">
+    <span class="tbl-title" id="tbl-title">ÓRGÃOS JULGADORES</span>
+    <span class="tbl-count" id="tbl-count">–</span>
+  </div>
+  <table>
+    <thead><tr id="thead-row"></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<footer>Fonte: CNJ · Dados processuais mar/2025–fev/2026 · TRT12 – Tribunal Regional do Trabalho da 12ª Região · Santa Catarina</footer>
+
+<script>
+// ── DADOS ─────────────────────────────────────────────────────────────────
+var RAW = [{"id_orgao_julgador": 19384, "orgao_julgador": "1ª VT DE BALNEÁRIO CAMBORIÚ", "municipio_oj": "BALNEARIO CAMBORIU", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1617.0, "saida": 1547.0, "pend_final": 935.0, "iad": 95.7, "tcl": 28.0}, {"id_orgao_julgador": 19384, "orgao_julgador": "1ª VT DE BALNEÁRIO CAMBORIÚ", "municipio_oj": "BALNEARIO CAMBORIU", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 608.0, "saida": 623.0, "pend_final": 661.0, "iad": 102.5, "tcl": 35.9}, {"id_orgao_julgador": 19385, "orgao_julgador": "1ª VT DE BLUMENAU", "municipio_oj": "BLUMENAU", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1135.0, "saida": 1119.0, "pend_final": 612.0, "iad": 98.6, "tcl": 25.0}, {"id_orgao_julgador": 19385, "orgao_julgador": "1ª VT DE BLUMENAU", "municipio_oj": "BLUMENAU", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 566.0, "saida": 648.0, "pend_final": 758.0, "iad": 114.5, "tcl": 40.9}, {"id_orgao_julgador": 19386, "orgao_julgador": "1ª VT DE BRUSQUE", "municipio_oj": "BRUSQUE", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1144.0, "saida": 1264.0, "pend_final": 413.0, "iad": 110.5, "tcl": 16.1}, {"id_orgao_julgador": 19386, "orgao_julgador": "1ª VT DE BRUSQUE", "municipio_oj": "BRUSQUE", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 528.0, "saida": 582.0, "pend_final": 346.0, "iad": 110.2, "tcl": 25.5}, {"id_orgao_julgador": 19387, "orgao_julgador": "1ª VT DE CHAPECÓ", "municipio_oj": "CHAPECO", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1678.0, "saida": 1690.0, "pend_final": 1590.0, "iad": 100.7, "tcl": 34.9}, {"id_orgao_julgador": 19387, "orgao_julgador": "1ª VT DE CHAPECÓ", "municipio_oj": "CHAPECO", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 623.0, "saida": 560.0, "pend_final": 269.0, "iad": 89.9, "tcl": 19.9}, {"id_orgao_julgador": 19388, "orgao_julgador": "1ª VT DE CRICIÚMA", "municipio_oj": "CRICIUMA", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1456.0, "saida": 1235.0, "pend_final": 1169.0, "iad": 84.8, "tcl": 36.2}, {"id_orgao_julgador": 19388, "orgao_julgador": "1ª VT DE CRICIÚMA", "municipio_oj": "CRICIUMA", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 690.0, "saida": 767.0, "pend_final": 611.0, "iad": 111.2, "tcl": 32.1}, {"id_orgao_julgador": 19389, "orgao_julgador": "1ª VT DE FLORIANÓPOLIS", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1218.0, "saida": 1268.0, "pend_final": 628.0, "iad": 104.1, "tcl": 22.8}, {"id_orgao_julgador": 19389, "orgao_julgador": "1ª VT DE FLORIANÓPOLIS", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 615.0, "saida": 597.0, "pend_final": 456.0, "iad": 97.1, "tcl": 33.3}, {"id_orgao_julgador": 19390, "orgao_julgador": "1ª VT DE ITAJAÍ", "municipio_oj": "ITAJAI", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1705.0, "saida": 1579.0, "pend_final": 1494.0, "iad": 92.6, "tcl": 35.4}, {"id_orgao_julgador": 19390, "orgao_julgador": "1ª VT DE ITAJAÍ", "municipio_oj": "ITAJAI", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 963.0, "saida": 787.0, "pend_final": 796.0, "iad": 81.7, "tcl": 39.3}, {"id_orgao_julgador": 19391, "orgao_julgador": "1ª VT DE JARAGUÁ DO SUL", "municipio_oj": "JARAGUA DO SUL", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1469.0, "saida": 1406.0, "pend_final": 886.0, "iad": 95.7, "tcl": 27.3}, {"id_orgao_julgador": 19391, "orgao_julgador": "1ª VT DE JARAGUÁ DO SUL", "municipio_oj": "JARAGUA DO SUL", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 641.0, "saida": 723.0, "pend_final": 482.0, "iad": 112.8, "tcl": 26.4}, {"id_orgao_julgador": 19392, "orgao_julgador": "1ª VT DE JOINVILLE", "municipio_oj": "JOINVILLE", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1955.0, "saida": 1875.0, "pend_final": 1521.0, "iad": 95.9, "tcl": 31.6}, {"id_orgao_julgador": 19392, "orgao_julgador": "1ª VT DE JOINVILLE", "municipio_oj": "JOINVILLE", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 812.0, "saida": 825.0, "pend_final": 940.0, "iad": 101.6, "tcl": 38.1}, {"id_orgao_julgador": 19393, "orgao_julgador": "1ª VT DE LAGES", "municipio_oj": "LAGES", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 889.0, "saida": 862.0, "pend_final": 480.0, "iad": 97.0, "tcl": 23.7}, {"id_orgao_julgador": 19393, "orgao_julgador": "1ª VT DE LAGES", "municipio_oj": "LAGES", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 355.0, "saida": 421.0, "pend_final": 399.0, "iad": 118.6, "tcl": 32.7}, {"id_orgao_julgador": 19394, "orgao_julgador": "1ª VT DE RIO DO SUL", "municipio_oj": "RIO DO SUL", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1331.0, "saida": 1355.0, "pend_final": 1132.0, "iad": 101.8, "tcl": 33.1}, {"id_orgao_julgador": 19394, "orgao_julgador": "1ª VT DE RIO DO SUL", "municipio_oj": "RIO DO SUL", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 639.0, "saida": 643.0, "pend_final": 507.0, "iad": 100.6, "tcl": 30.6}, {"id_orgao_julgador": 19395, "orgao_julgador": "1ª VT DE SÃO JOSÉ", "municipio_oj": "SAO JOSE", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1375.0, "saida": 1254.0, "pend_final": 926.0, "iad": 91.2, "tcl": 30.3}, {"id_orgao_julgador": 19395, "orgao_julgador": "1ª VT DE SÃO JOSÉ", "municipio_oj": "SAO JOSE", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 616.0, "saida": 724.0, "pend_final": 410.0, "iad": 117.5, "tcl": 24.6}, {"id_orgao_julgador": 19396, "orgao_julgador": "1ª VT DE TUBARÃO", "municipio_oj": "TUBARAO", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1189.0, "saida": 1138.0, "pend_final": 676.0, "iad": 95.7, "tcl": 26.2}, {"id_orgao_julgador": 19396, "orgao_julgador": "1ª VT DE TUBARÃO", "municipio_oj": "TUBARAO", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 392.0, "saida": 380.0, "pend_final": 435.0, "iad": 96.9, "tcl": 39.6}, {"id_orgao_julgador": 19397, "orgao_julgador": "2ª VT DE BALNEÁRIO CAMBORIÚ", "municipio_oj": "BALNEARIO CAMBORIU", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1544.0, "saida": 1317.0, "pend_final": 1051.0, "iad": 85.3, "tcl": 30.2}, {"id_orgao_julgador": 19397, "orgao_julgador": "2ª VT DE BALNEÁRIO CAMBORIÚ", "municipio_oj": "BALNEARIO CAMBORIU", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 573.0, "saida": 661.0, "pend_final": 1213.0, "iad": 115.4, "tcl": 48.1}, {"id_orgao_julgador": 19398, "orgao_julgador": "2ª VT DE BLUMENAU", "municipio_oj": "BLUMENAU", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1091.0, "saida": 990.0, "pend_final": 615.0, "iad": 90.7, "tcl": 26.0}, {"id_orgao_julgador": 19398, "orgao_julgador": "2ª VT DE BLUMENAU", "municipio_oj": "BLUMENAU", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 554.0, "saida": 692.0, "pend_final": 834.0, "iad": 124.9, "tcl": 38.7}, {"id_orgao_julgador": 19399, "orgao_julgador": "2ª VT DE BRUSQUE", "municipio_oj": "BRUSQUE", "tipo_unidade": "Núcleo J4.0", "segmento": "1gc", "entrada": 1139.0, "saida": 1182.0, "pend_final": 183.0, "iad": 103.8, "tcl": 7.8}, {"id_orgao_julgador": 19399, "orgao_julgador": "2ª VT DE BRUSQUE", "municipio_oj": "BRUSQUE", "tipo_unidade": "Núcleo J4.0", "segmento": "1ge", "entrada": 530.0, "saida": 649.0, "pend_final": 313.0, "iad": 122.5, "tcl": 21.8}, {"id_orgao_julgador": 19400, "orgao_julgador": "2ª VT DE CHAPECÓ", "municipio_oj": "CHAPECO", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1439.0, "saida": 1373.0, "pend_final": 1110.0, "iad": 95.4, "tcl": 31.2}, {"id_orgao_julgador": 19400, "orgao_julgador": "2ª VT DE CHAPECÓ", "municipio_oj": "CHAPECO", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 716.0, "saida": 647.0, "pend_final": 329.0, "iad": 90.4, "tcl": 21.4}, {"id_orgao_julgador": 19401, "orgao_julgador": "2ª VT DE CRICIÚMA", "municipio_oj": "CRICIUMA", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1359.0, "saida": 1155.0, "pend_final": 1311.0, "iad": 85.0, "tcl": 41.4}, {"id_orgao_julgador": 19401, "orgao_julgador": "2ª VT DE CRICIÚMA", "municipio_oj": "CRICIUMA", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 660.0, "saida": 734.0, "pend_final": 655.0, "iad": 111.2, "tcl": 31.4}, {"id_orgao_julgador": 19402, "orgao_julgador": "2ª VT DE FLORIANÓPOLIS", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 758.0, "saida": 711.0, "pend_final": 763.0, "iad": 93.8, "tcl": 38.8}, {"id_orgao_julgador": 19402, "orgao_julgador": "2ª VT DE FLORIANÓPOLIS", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 635.0, "saida": 714.0, "pend_final": 608.0, "iad": 112.4, "tcl": 34.5}, {"id_orgao_julgador": 19403, "orgao_julgador": "2ª VT DE ITAJAÍ", "municipio_oj": "ITAJAI", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1259.0, "saida": 1020.0, "pend_final": 1293.0, "iad": 81.0, "tcl": 40.7}, {"id_orgao_julgador": 19403, "orgao_julgador": "2ª VT DE ITAJAÍ", "municipio_oj": "ITAJAI", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 1077.0, "saida": 947.0, "pend_final": 915.0, "iad": 87.9, "tcl": 36.7}, {"id_orgao_julgador": 19404, "orgao_julgador": "2ª VT DE JARAGUÁ DO SUL", "municipio_oj": "JARAGUA DO SUL", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1259.0, "saida": 1380.0, "pend_final": 771.0, "iad": 109.6, "tcl": 25.5}, {"id_orgao_julgador": 19404, "orgao_julgador": "2ª VT DE JARAGUÁ DO SUL", "municipio_oj": "JARAGUA DO SUL", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 794.0, "saida": 853.0, "pend_final": 636.0, "iad": 107.4, "tcl": 28.1}, {"id_orgao_julgador": 19405, "orgao_julgador": "2ª VT DE JOINVILLE", "municipio_oj": "JOINVILLE", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 2266.0, "saida": 2238.0, "pend_final": 1234.0, "iad": 98.8, "tcl": 24.9}, {"id_orgao_julgador": 19405, "orgao_julgador": "2ª VT DE JOINVILLE", "municipio_oj": "JOINVILLE", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 843.0, "saida": 824.0, "pend_final": 695.0, "iad": 97.7, "tcl": 32.0}, {"id_orgao_julgador": 19406, "orgao_julgador": "2ª VT DE LAGES", "municipio_oj": "LAGES", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 924.0, "saida": 884.0, "pend_final": 440.0, "iad": 95.7, "tcl": 21.7}, {"id_orgao_julgador": 19406, "orgao_julgador": "2ª VT DE LAGES", "municipio_oj": "LAGES", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 408.0, "saida": 375.0, "pend_final": 395.0, "iad": 91.9, "tcl": 36.3}, {"id_orgao_julgador": 19407, "orgao_julgador": "2ª VT DE RIO DO SUL", "municipio_oj": "RIO DO SUL", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1390.0, "saida": 1476.0, "pend_final": 895.0, "iad": 106.2, "tcl": 26.5}, {"id_orgao_julgador": 19407, "orgao_julgador": "2ª VT DE RIO DO SUL", "municipio_oj": "RIO DO SUL", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 793.0, "saida": 702.0, "pend_final": 526.0, "iad": 88.5, "tcl": 30.5}, {"id_orgao_julgador": 19408, "orgao_julgador": "2ª VT DE SÃO JOSÉ", "municipio_oj": "SAO JOSE", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1629.0, "saida": 1623.0, "pend_final": 1038.0, "iad": 99.6, "tcl": 29.2}, {"id_orgao_julgador": 19408, "orgao_julgador": "2ª VT DE SÃO JOSÉ", "municipio_oj": "SAO JOSE", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 820.0, "saida": 926.0, "pend_final": 525.0, "iad": 112.9, "tcl": 23.8}, {"id_orgao_julgador": 19409, "orgao_julgador": "2ª VT DE TUBARÃO", "municipio_oj": "TUBARAO", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1094.0, "saida": 1114.0, "pend_final": 601.0, "iad": 101.8, "tcl": 25.1}, {"id_orgao_julgador": 19409, "orgao_julgador": "2ª VT DE TUBARÃO", "municipio_oj": "TUBARAO", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 421.0, "saida": 438.0, "pend_final": 556.0, "iad": 104.0, "tcl": 42.9}, {"id_orgao_julgador": 19410, "orgao_julgador": "3ª VT DE BLUMENAU", "municipio_oj": "BLUMENAU", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1276.0, "saida": 1353.0, "pend_final": 544.0, "iad": 106.0, "tcl": 19.1}, {"id_orgao_julgador": 19410, "orgao_julgador": "3ª VT DE BLUMENAU", "municipio_oj": "BLUMENAU", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 528.0, "saida": 457.0, "pend_final": 1204.0, "iad": 86.6, "tcl": 58.9}, {"id_orgao_julgador": 19411, "orgao_julgador": "3ª VT DE CHAPECÓ", "municipio_oj": "CHAPECO", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1432.0, "saida": 1354.0, "pend_final": 1873.0, "iad": 94.6, "tcl": 42.3}, {"id_orgao_julgador": 19411, "orgao_julgador": "3ª VT DE CHAPECÓ", "municipio_oj": "CHAPECO", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 624.0, "saida": 580.0, "pend_final": 280.0, "iad": 92.9, "tcl": 20.9}, {"id_orgao_julgador": 19412, "orgao_julgador": "3ª VT DE CRICIÚMA (EXTINTA)", "municipio_oj": "CRICIUMA", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1.0, "saida": 10.0, "pend_final": 1.0, "iad": 1000.0, "tcl": 4.8}, {"id_orgao_julgador": 19412, "orgao_julgador": "3ª VT DE CRICIÚMA (EXTINTA)", "municipio_oj": "CRICIUMA", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 2.0, "saida": 34.0, "pend_final": 1.0, "iad": 1700.0, "tcl": 0.1}, {"id_orgao_julgador": 19413, "orgao_julgador": "3ª VT DE FLORIANÓPOLIS", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1264.0, "saida": 1324.0, "pend_final": 887.0, "iad": 104.7, "tcl": 28.7}, {"id_orgao_julgador": 19413, "orgao_julgador": "3ª VT DE FLORIANÓPOLIS", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 592.0, "saida": 717.0, "pend_final": 1067.0, "iad": 121.1, "tcl": 48.5}, {"id_orgao_julgador": 19414, "orgao_julgador": "3ª VT DE ITAJAÍ", "municipio_oj": "ITAJAI", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1731.0, "saida": 1593.0, "pend_final": 1562.0, "iad": 92.0, "tcl": 35.1}, {"id_orgao_julgador": 19414, "orgao_julgador": "3ª VT DE ITAJAÍ", "municipio_oj": "ITAJAI", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 738.0, "saida": 563.0, "pend_final": 1038.0, "iad": 76.3, "tcl": 47.5}, {"id_orgao_julgador": 19415, "orgao_julgador": "3ª VT DE JOINVILLE", "municipio_oj": "JOINVILLE", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 2043.0, "saida": 1865.0, "pend_final": 1470.0, "iad": 91.3, "tcl": 31.1}, {"id_orgao_julgador": 19415, "orgao_julgador": "3ª VT DE JOINVILLE", "municipio_oj": "JOINVILLE", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 792.0, "saida": 832.0, "pend_final": 556.0, "iad": 105.1, "tcl": 27.0}, {"id_orgao_julgador": 19416, "orgao_julgador": "3ª VT DE LAGES", "municipio_oj": "LAGES", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 719.0, "saida": 648.0, "pend_final": 520.0, "iad": 90.1, "tcl": 30.7}, {"id_orgao_julgador": 19416, "orgao_julgador": "3ª VT DE LAGES", "municipio_oj": "LAGES", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 402.0, "saida": 452.0, "pend_final": 337.0, "iad": 112.4, "tcl": 30.1}, {"id_orgao_julgador": 19417, "orgao_julgador": "3ª VT DE SÃO JOSÉ", "municipio_oj": "SAO JOSE", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1422.0, "saida": 1275.0, "pend_final": 1580.0, "iad": 89.7, "tcl": 41.6}, {"id_orgao_julgador": 19417, "orgao_julgador": "3ª VT DE SÃO JOSÉ", "municipio_oj": "SAO JOSE", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 583.0, "saida": 704.0, "pend_final": 882.0, "iad": 120.8, "tcl": 39.1}, {"id_orgao_julgador": 19418, "orgao_julgador": "4ª VT DE BLUMENAU", "municipio_oj": "BLUMENAU", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1141.0, "saida": 1106.0, "pend_final": 697.0, "iad": 96.9, "tcl": 27.3}, {"id_orgao_julgador": 19418, "orgao_julgador": "4ª VT DE BLUMENAU", "municipio_oj": "BLUMENAU", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 548.0, "saida": 657.0, "pend_final": 718.0, "iad": 119.9, "tcl": 38.8}, {"id_orgao_julgador": 19419, "orgao_julgador": "4ª VT DE CHAPECÓ", "municipio_oj": "CHAPECO", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1528.0, "saida": 1381.0, "pend_final": 1311.0, "iad": 90.4, "tcl": 33.5}, {"id_orgao_julgador": 19419, "orgao_julgador": "4ª VT DE CHAPECÓ", "municipio_oj": "CHAPECO", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 733.0, "saida": 693.0, "pend_final": 410.0, "iad": 94.5, "tcl": 23.9}, {"id_orgao_julgador": 19420, "orgao_julgador": "3ª VT DE CRICIÚMA", "municipio_oj": "CRICIUMA", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1281.0, "saida": 995.0, "pend_final": 1423.0, "iad": 77.7, "tcl": 45.6}, {"id_orgao_julgador": 19420, "orgao_julgador": "3ª VT DE CRICIÚMA", "municipio_oj": "CRICIUMA", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 617.0, "saida": 588.0, "pend_final": 757.0, "iad": 95.3, "tcl": 38.7}, {"id_orgao_julgador": 19421, "orgao_julgador": "4ª VT DE FLORIANÓPOLIS", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1294.0, "saida": 1327.0, "pend_final": 806.0, "iad": 102.6, "tcl": 27.5}, {"id_orgao_julgador": 19421, "orgao_julgador": "4ª VT DE FLORIANÓPOLIS", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 470.0, "saida": 609.0, "pend_final": 592.0, "iad": 129.6, "tcl": 36.4}, {"id_orgao_julgador": 19422, "orgao_julgador": "4ª VT DE JOINVILLE", "municipio_oj": "JOINVILLE", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 2163.0, "saida": 2059.0, "pend_final": 1315.0, "iad": 95.2, "tcl": 27.4}, {"id_orgao_julgador": 19422, "orgao_julgador": "4ª VT DE JOINVILLE", "municipio_oj": "JOINVILLE", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 785.0, "saida": 792.0, "pend_final": 772.0, "iad": 100.9, "tcl": 36.2}, {"id_orgao_julgador": 19423, "orgao_julgador": "5ª VT DE FLORIANÓPOLIS", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1194.0, "saida": 1179.0, "pend_final": 656.0, "iad": 98.7, "tcl": 23.4}, {"id_orgao_julgador": 19423, "orgao_julgador": "5ª VT DE FLORIANÓPOLIS", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 595.0, "saida": 598.0, "pend_final": 882.0, "iad": 100.5, "tcl": 45.6}, {"id_orgao_julgador": 19424, "orgao_julgador": "5ª VT DE JOINVILLE", "municipio_oj": "JOINVILLE", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 2026.0, "saida": 1868.0, "pend_final": 1146.0, "iad": 92.2, "tcl": 26.2}, {"id_orgao_julgador": 19424, "orgao_julgador": "5ª VT DE JOINVILLE", "municipio_oj": "JOINVILLE", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 768.0, "saida": 791.0, "pend_final": 445.0, "iad": 103.0, "tcl": 23.3}, {"id_orgao_julgador": 19425, "orgao_julgador": "6ª VT DE FLORIANÓPOLIS", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 746.0, "saida": 689.0, "pend_final": 700.0, "iad": 92.4, "tcl": 37.5}, {"id_orgao_julgador": 19425, "orgao_julgador": "6ª VT DE FLORIANÓPOLIS", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 492.0, "saida": 497.0, "pend_final": 684.0, "iad": 101.0, "tcl": 45.1}, {"id_orgao_julgador": 19426, "orgao_julgador": "7ª VT DE FLORIANÓPOLIS", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1206.0, "saida": 1271.0, "pend_final": 605.0, "iad": 105.4, "tcl": 21.8}, {"id_orgao_julgador": 19426, "orgao_julgador": "7ª VT DE FLORIANÓPOLIS", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 605.0, "saida": 787.0, "pend_final": 738.0, "iad": 130.1, "tcl": 37.7}, {"id_orgao_julgador": 19427, "orgao_julgador": "VT DE ARARANGUÁ", "municipio_oj": "ARARANGUA", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1217.0, "saida": 1019.0, "pend_final": 859.0, "iad": 83.7, "tcl": 32.4}, {"id_orgao_julgador": 19427, "orgao_julgador": "VT DE ARARANGUÁ", "municipio_oj": "ARARANGUA", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 642.0, "saida": 597.0, "pend_final": 656.0, "iad": 93.0, "tcl": 36.1}, {"id_orgao_julgador": 19429, "orgao_julgador": "VT DE CAÇADOR", "municipio_oj": "CACADOR", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 948.0, "saida": 779.0, "pend_final": 484.0, "iad": 82.2, "tcl": 23.8}, {"id_orgao_julgador": 19429, "orgao_julgador": "VT DE CAÇADOR", "municipio_oj": "CACADOR", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 600.0, "saida": 577.0, "pend_final": 258.0, "iad": 96.2, "tcl": 20.8}, {"id_orgao_julgador": 19430, "orgao_julgador": "VT DE CANOINHAS", "municipio_oj": "CANOINHAS", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 609.0, "saida": 502.0, "pend_final": 368.0, "iad": 82.4, "tcl": 25.4}, {"id_orgao_julgador": 19430, "orgao_julgador": "VT DE CANOINHAS", "municipio_oj": "CANOINHAS", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 363.0, "saida": 664.0, "pend_final": 311.0, "iad": 182.9, "tcl": 23.8}, {"id_orgao_julgador": 19431, "orgao_julgador": "VT DE CONCÓRDIA", "municipio_oj": "CONCORDIA", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1499.0, "saida": 1182.0, "pend_final": 1849.0, "iad": 78.9, "tcl": 47.3}, {"id_orgao_julgador": 19431, "orgao_julgador": "VT DE CONCÓRDIA", "municipio_oj": "CONCORDIA", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 1066.0, "saida": 836.0, "pend_final": 607.0, "iad": 78.4, "tcl": 28.6}, {"id_orgao_julgador": 19432, "orgao_julgador": "GAB. DES. MIRNA ULIANO BERTOLDI", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 1160.0, "saida": 1239.0, "pend_final": 571.0, "iad": 106.8, "tcl": 19.4}, {"id_orgao_julgador": 19433, "orgao_julgador": "VT DE CURITIBANOS", "municipio_oj": "CURITIBANOS", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 510.0, "saida": 423.0, "pend_final": 320.0, "iad": 82.9, "tcl": 28.0}, {"id_orgao_julgador": 19433, "orgao_julgador": "VT DE CURITIBANOS", "municipio_oj": "CURITIBANOS", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 350.0, "saida": 364.0, "pend_final": 200.0, "iad": 104.0, "tcl": 24.3}, {"id_orgao_julgador": 19434, "orgao_julgador": "VT DE FRAIBURGO", "municipio_oj": "FRAIBURGO", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 599.0, "saida": 582.0, "pend_final": 106.0, "iad": 97.2, "tcl": 9.2}, {"id_orgao_julgador": 19434, "orgao_julgador": "VT DE FRAIBURGO", "municipio_oj": "FRAIBURGO", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 417.0, "saida": 443.0, "pend_final": 45.0, "iad": 106.2, "tcl": 5.3}, {"id_orgao_julgador": 19435, "orgao_julgador": "GAB. DES. AMARILDO CARLOS DE LIMA", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 305.0, "saida": 15.0, "pend_final": 292.0, "iad": 4.9, "tcl": 93.9}, {"id_orgao_julgador": 19438, "orgao_julgador": "GAB. DES. NIVALDO STANKIEWICZ", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 1461.0, "saida": 1211.0, "pend_final": 874.0, "iad": 82.9, "tcl": 27.5}, {"id_orgao_julgador": 19439, "orgao_julgador": "GAB. DES. NARBAL ANTÔNIO DE MENDONÇA FILETI", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 308.0, "saida": 12.0, "pend_final": 297.0, "iad": 3.9, "tcl": 94.0}, {"id_orgao_julgador": 19440, "orgao_julgador": "GABINETE VAGO - GRPB", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 1527.0, "saida": 1198.0, "pend_final": 921.0, "iad": 78.5, "tcl": 29.4}, {"id_orgao_julgador": 19441, "orgao_julgador": "GAB. DES. GARIBALDI T. PEREIRA FERREIRA", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 1482.0, "saida": 1354.0, "pend_final": 931.0, "iad": 91.4, "tcl": 27.9}, {"id_orgao_julgador": 19442, "orgao_julgador": "GAB. DES. JOSE ERNESTO MANZI", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 1507.0, "saida": 1355.0, "pend_final": 932.0, "iad": 89.9, "tcl": 26.8}, {"id_orgao_julgador": 19445, "orgao_julgador": "GAB. DES. REINALDO BRANCO DE MORAES", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 1337.0, "saida": 1433.0, "pend_final": 698.0, "iad": 107.2, "tcl": 21.4}, {"id_orgao_julgador": 19446, "orgao_julgador": "GAB. DES. MARI ELEDA MIGLIORINI", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 1582.0, "saida": 1471.0, "pend_final": 1100.0, "iad": 93.0, "tcl": 29.3}, {"id_orgao_julgador": 19447, "orgao_julgador": "GAB. DES. MARIA DE LOURDES LEIRIA", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 1522.0, "saida": 1354.0, "pend_final": 960.0, "iad": 89.0, "tcl": 28.6}, {"id_orgao_julgador": 19448, "orgao_julgador": "GAB. DES. MARCOS VINICIO ZANCHETTA", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 1603.0, "saida": 1400.0, "pend_final": 961.0, "iad": 87.3, "tcl": 27.3}, {"id_orgao_julgador": 19449, "orgao_julgador": "GAB. DES. ROBERTO BASILONE LEITE", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 1472.0, "saida": 1216.0, "pend_final": 873.0, "iad": 82.6, "tcl": 26.7}, {"id_orgao_julgador": 19450, "orgao_julgador": "GAB. DES. ROBERTO LUIZ GUGLIELMETTO", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 1477.0, "saida": 1276.0, "pend_final": 1033.0, "iad": 86.4, "tcl": 30.9}, {"id_orgao_julgador": 19451, "orgao_julgador": "GAB. DES. TERESA REGINA COTOSKY", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 1112.0, "saida": 1162.0, "pend_final": 650.0, "iad": 104.5, "tcl": 22.5}, {"id_orgao_julgador": 19453, "orgao_julgador": "VT DE IMBITUBA", "municipio_oj": "IMBITUBA", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 906.0, "saida": 769.0, "pend_final": 795.0, "iad": 84.9, "tcl": 40.3}, {"id_orgao_julgador": 19453, "orgao_julgador": "VT DE IMBITUBA", "municipio_oj": "IMBITUBA", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 513.0, "saida": 521.0, "pend_final": 282.0, "iad": 101.6, "tcl": 22.6}, {"id_orgao_julgador": 19454, "orgao_julgador": "VT DE INDAIAL", "municipio_oj": "INDAIAL", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 490.0, "saida": 386.0, "pend_final": 306.0, "iad": 78.8, "tcl": 30.1}, {"id_orgao_julgador": 19454, "orgao_julgador": "VT DE INDAIAL", "municipio_oj": "INDAIAL", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 372.0, "saida": 425.0, "pend_final": 382.0, "iad": 114.2, "tcl": 31.4}, {"id_orgao_julgador": 19455, "orgao_julgador": "VT DE JOAÇABA", "municipio_oj": "JOACABA", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1379.0, "saida": 1293.0, "pend_final": 787.0, "iad": 93.8, "tcl": 26.2}, {"id_orgao_julgador": 19455, "orgao_julgador": "VT DE JOAÇABA", "municipio_oj": "JOACABA", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 815.0, "saida": 878.0, "pend_final": 275.0, "iad": 107.7, "tcl": 14.9}, {"id_orgao_julgador": 19456, "orgao_julgador": "VT DE MAFRA", "municipio_oj": "MAFRA", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 655.0, "saida": 608.0, "pend_final": 529.0, "iad": 92.8, "tcl": 31.7}, {"id_orgao_julgador": 19456, "orgao_julgador": "VT DE MAFRA", "municipio_oj": "MAFRA", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 474.0, "saida": 480.0, "pend_final": 351.0, "iad": 101.3, "tcl": 30.6}, {"id_orgao_julgador": 19457, "orgao_julgador": "VT DE NAVEGANTES", "municipio_oj": "NAVEGANTES", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 2630.0, "saida": 2398.0, "pend_final": 1594.0, "iad": 91.2, "tcl": 28.6}, {"id_orgao_julgador": 19457, "orgao_julgador": "VT DE NAVEGANTES", "municipio_oj": "NAVEGANTES", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 790.0, "saida": 705.0, "pend_final": 558.0, "iad": 89.2, "tcl": 31.9}, {"id_orgao_julgador": 19471, "orgao_julgador": "VT DE PALHOÇA", "municipio_oj": "PALHOCA", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1808.0, "saida": 1451.0, "pend_final": 2958.0, "iad": 80.3, "tcl": 53.5}, {"id_orgao_julgador": 19471, "orgao_julgador": "VT DE PALHOÇA", "municipio_oj": "PALHOCA", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 764.0, "saida": 702.0, "pend_final": 1576.0, "iad": 91.9, "tcl": 57.0}, {"id_orgao_julgador": 19472, "orgao_julgador": "VT DE SÃO MIGUEL DO OESTE", "municipio_oj": "SAO MIGUEL DO OESTE", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1635.0, "saida": 1176.0, "pend_final": 1438.0, "iad": 71.9, "tcl": 42.1}, {"id_orgao_julgador": 19472, "orgao_julgador": "VT DE SÃO MIGUEL DO OESTE", "municipio_oj": "SAO MIGUEL DO OESTE", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 935.0, "saida": 1048.0, "pend_final": 475.0, "iad": 112.1, "tcl": 21.0}, {"id_orgao_julgador": 19473, "orgao_julgador": "VT DE SÃO BENTO DO SUL", "municipio_oj": "SAO BENTO DO SUL", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 719.0, "saida": 538.0, "pend_final": 551.0, "iad": 74.8, "tcl": 35.9}, {"id_orgao_julgador": 19473, "orgao_julgador": "VT DE SÃO BENTO DO SUL", "municipio_oj": "SAO BENTO DO SUL", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 473.0, "saida": 411.0, "pend_final": 621.0, "iad": 86.9, "tcl": 46.7}, {"id_orgao_julgador": 19489, "orgao_julgador": "VT DE TIMBÓ", "municipio_oj": "TIMBO", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 806.0, "saida": 883.0, "pend_final": 334.0, "iad": 109.6, "tcl": 20.0}, {"id_orgao_julgador": 19489, "orgao_julgador": "VT DE TIMBÓ", "municipio_oj": "TIMBO", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 333.0, "saida": 319.0, "pend_final": 462.0, "iad": 95.8, "tcl": 45.8}, {"id_orgao_julgador": 19490, "orgao_julgador": "VT DE VIDEIRA", "municipio_oj": "VIDEIRA", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1293.0, "saida": 1159.0, "pend_final": 450.0, "iad": 89.6, "tcl": 17.6}, {"id_orgao_julgador": 19490, "orgao_julgador": "VT DE VIDEIRA", "municipio_oj": "VIDEIRA", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 1052.0, "saida": 1015.0, "pend_final": 144.0, "iad": 96.5, "tcl": 7.2}, {"id_orgao_julgador": 19491, "orgao_julgador": "VT DE XANXERÊ", "municipio_oj": "XANXERE", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 1765.0, "saida": 1453.0, "pend_final": 2188.0, "iad": 82.3, "tcl": 47.0}, {"id_orgao_julgador": 19491, "orgao_julgador": "VT DE XANXERÊ", "municipio_oj": "XANXERE", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 999.0, "saida": 905.0, "pend_final": 439.0, "iad": 90.6, "tcl": 22.1}, {"id_orgao_julgador": 47341, "orgao_julgador": "GAB. PRESIDÊNCIA", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Presidência", "segmento": "2g", "entrada": 25.0, "saida": 12.0, "pend_final": 27.0, "iad": 48.0, "tcl": 57.4}, {"id_orgao_julgador": 71194, "orgao_julgador": "CEJUSC 2º GRAU", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "CEJUSC", "segmento": "2g", "entrada": 1553.0, "saida": 1695.0, "pend_final": 255.0, "iad": 109.1, "tcl": 8.7}, {"id_orgao_julgador": 74578, "orgao_julgador": "GAB. DES. WANDERLEY GODOY JUNIOR", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 1450.0, "saida": 1293.0, "pend_final": 868.0, "iad": 89.2, "tcl": 27.5}, {"id_orgao_julgador": 76688, "orgao_julgador": "GAB. DES. HELIO BASTIDA LOPES", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 1411.0, "saida": 1220.0, "pend_final": 744.0, "iad": 86.5, "tcl": 24.6}, {"id_orgao_julgador": 78563, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE FLORIANÓPOLIS", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "CEJUSC", "segmento": "1gc", "entrada": 2493.0, "saida": 2601.0, "pend_final": 971.0, "iad": 104.3, "tcl": 17.8}, {"id_orgao_julgador": 78563, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE FLORIANÓPOLIS", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "CEJUSC", "segmento": "1ge", "entrada": 33.0, "saida": 35.0, "pend_final": 3.0, "iad": 106.1, "tcl": 6.2}, {"id_orgao_julgador": 78564, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE ITAJAÍ", "municipio_oj": "ITAJAI", "tipo_unidade": "CEJUSC", "segmento": "1gc", "entrada": 1767.0, "saida": 2106.0, "pend_final": 1083.0, "iad": 119.2, "tcl": 21.3}, {"id_orgao_julgador": 78564, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE ITAJAÍ", "municipio_oj": "ITAJAI", "tipo_unidade": "CEJUSC", "segmento": "1ge", "entrada": 6.0, "saida": 7.0, "pend_final": 3.0, "iad": 116.7, "tcl": 13.6}, {"id_orgao_julgador": 78565, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE JARAGUÁ DO SUL", "municipio_oj": "JARAGUA DO SUL", "tipo_unidade": "CEJUSC", "segmento": "1gc", "entrada": 796.0, "saida": 805.0, "pend_final": 264.0, "iad": 101.1, "tcl": 16.2}, {"id_orgao_julgador": 78565, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE JARAGUÁ DO SUL", "municipio_oj": "JARAGUA DO SUL", "tipo_unidade": "CEJUSC", "segmento": "1ge", "entrada": 16.0, "saida": 21.0, "pend_final": 0.0, "iad": 131.2, "tcl": 0.0}, {"id_orgao_julgador": 78566, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE SÃO JOSÉ", "municipio_oj": "SAO JOSE", "tipo_unidade": "CEJUSC", "segmento": "1gc", "entrada": 1549.0, "saida": 1445.0, "pend_final": 404.0, "iad": 93.3, "tcl": 13.9}, {"id_orgao_julgador": 78566, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE SÃO JOSÉ", "municipio_oj": "SAO JOSE", "tipo_unidade": "CEJUSC", "segmento": "1ge", "entrada": 2.0, "saida": 6.0, "pend_final": 1.0, "iad": 300.0, "tcl": 4.8}, {"id_orgao_julgador": 79495, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE JOINVILLE", "municipio_oj": "JOINVILLE", "tipo_unidade": "CEJUSC", "segmento": "1gc", "entrada": 3217.0, "saida": 3073.0, "pend_final": 1090.0, "iad": 95.5, "tcl": 16.2}, {"id_orgao_julgador": 79495, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE JOINVILLE", "municipio_oj": "JOINVILLE", "tipo_unidade": "CEJUSC", "segmento": "1ge", "entrada": 67.0, "saida": 79.0, "pend_final": 16.0, "iad": 117.9, "tcl": 8.8}, {"id_orgao_julgador": 79496, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE LAGES", "municipio_oj": "LAGES", "tipo_unidade": "CEJUSC", "segmento": "1gc", "entrada": 630.0, "saida": 626.0, "pend_final": 151.0, "iad": 99.4, "tcl": 11.4}, {"id_orgao_julgador": 79496, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE LAGES", "municipio_oj": "LAGES", "tipo_unidade": "CEJUSC", "segmento": "1ge", "entrada": 47.0, "saida": 57.0, "pend_final": 3.0, "iad": 121.3, "tcl": 3.2}, {"id_orgao_julgador": 79497, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE BLUMENAU", "municipio_oj": "BLUMENAU", "tipo_unidade": "CEJUSC", "segmento": "1gc", "entrada": 1661.0, "saida": 1631.0, "pend_final": 596.0, "iad": 98.2, "tcl": 18.3}, {"id_orgao_julgador": 79497, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE BLUMENAU", "municipio_oj": "BLUMENAU", "tipo_unidade": "CEJUSC", "segmento": "1ge", "entrada": 184.0, "saida": 237.0, "pend_final": 75.0, "iad": 128.8, "tcl": 16.4}, {"id_orgao_julgador": 80145, "orgao_julgador": "GAB. DES. QUÉZIA DE ARAÚJO DUARTE NIEVES GONZALEZ", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 315.0, "saida": 41.0, "pend_final": 286.0, "iad": 13.0, "tcl": 73.7}, {"id_orgao_julgador": 80355, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE RIO DO SUL", "municipio_oj": "RIO DO SUL", "tipo_unidade": "CEJUSC", "segmento": "1gc", "entrada": 1144.0, "saida": 1164.0, "pend_final": 325.0, "iad": 101.7, "tcl": 14.1}, {"id_orgao_julgador": 80355, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE RIO DO SUL", "municipio_oj": "RIO DO SUL", "tipo_unidade": "CEJUSC", "segmento": "1ge", "entrada": 7.0, "saida": 8.0, "pend_final": 0.0, "iad": 114.3, "tcl": 0.0}, {"id_orgao_julgador": 80356, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE CHAPECÓ", "municipio_oj": "CHAPECO", "tipo_unidade": "CEJUSC", "segmento": "1gc", "entrada": 1540.0, "saida": 1989.0, "pend_final": 470.0, "iad": 129.2, "tcl": 11.6}, {"id_orgao_julgador": 80356, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE CHAPECÓ", "municipio_oj": "CHAPECO", "tipo_unidade": "CEJUSC", "segmento": "1ge", "entrada": 27.0, "saida": 29.0, "pend_final": 6.0, "iad": 107.4, "tcl": 8.7}, {"id_orgao_julgador": 80357, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE BRUSQUE", "municipio_oj": "BRUSQUE", "tipo_unidade": "CEJUSC", "segmento": "1gc", "entrada": 1007.0, "saida": 908.0, "pend_final": 455.0, "iad": 90.2, "tcl": 20.8}, {"id_orgao_julgador": 80357, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE BRUSQUE", "municipio_oj": "BRUSQUE", "tipo_unidade": "CEJUSC", "segmento": "1ge", "entrada": 144.0, "saida": 215.0, "pend_final": 38.0, "iad": 149.3, "tcl": 10.4}, {"id_orgao_julgador": 81167, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE BALNEÁRIO CAMBORIÚ", "municipio_oj": "BALNEARIO CAMBORIU", "tipo_unidade": "CEJUSC", "segmento": "1gc", "entrada": 1269.0, "saida": 1491.0, "pend_final": 712.0, "iad": 117.5, "tcl": 21.1}, {"id_orgao_julgador": 81167, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE BALNEÁRIO CAMBORIÚ", "municipio_oj": "BALNEARIO CAMBORIU", "tipo_unidade": "CEJUSC", "segmento": "1ge", "entrada": 6.0, "saida": 6.0, "pend_final": 0.0, "iad": 100.0, "tcl": 0.0}, {"id_orgao_julgador": 81301, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE TUBARÃO", "municipio_oj": "TUBARAO", "tipo_unidade": "CEJUSC", "segmento": "1gc", "entrada": 812.0, "saida": 789.0, "pend_final": 295.0, "iad": 97.2, "tcl": 18.1}, {"id_orgao_julgador": 81301, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE TUBARÃO", "municipio_oj": "TUBARAO", "tipo_unidade": "CEJUSC", "segmento": "1ge", "entrada": 5.0, "saida": 8.0, "pend_final": 0.0, "iad": 160.0, "tcl": 0.0}, {"id_orgao_julgador": 81420, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE CRICIÚMA", "municipio_oj": "CRICIUMA", "tipo_unidade": "CEJUSC", "segmento": "1gc", "entrada": 1118.0, "saida": 1509.0, "pend_final": 315.0, "iad": 135.0, "tcl": 11.5}, {"id_orgao_julgador": 81420, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DE CRICIÚMA", "municipio_oj": "CRICIUMA", "tipo_unidade": "CEJUSC", "segmento": "1ge", "entrada": 163.0, "saida": 209.0, "pend_final": 30.0, "iad": 128.2, "tcl": 7.5}, {"id_orgao_julgador": 82432, "orgao_julgador": "OJ DE ANÁLISE DE RECURSO ", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "SAR", "segmento": "2g", "entrada": 235.0, "saida": 155.0, "pend_final": 45.0, "iad": 66.0, "tcl": 15.4}, {"id_orgao_julgador": 84509, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DO MEIO-OESTE", "municipio_oj": "FRAIBURGO", "tipo_unidade": "CEJUSC", "segmento": "1gc", "entrada": 616.0, "saida": 483.0, "pend_final": 240.0, "iad": 78.4, "tcl": 19.4}, {"id_orgao_julgador": 84509, "orgao_julgador": "CEJUSC-JT-1º GRAU DIGITAL DO MEIO-OESTE", "municipio_oj": "FRAIBURGO", "tipo_unidade": "CEJUSC", "segmento": "1ge", "entrada": 39.0, "saida": 28.0, "pend_final": 14.0, "iad": 71.8, "tcl": 30.4}, {"id_orgao_julgador": 84860, "orgao_julgador": "VT DE ITAPEMA", "municipio_oj": "ITAPEMA", "tipo_unidade": "Vara", "segmento": "1gc", "entrada": 2741.0, "saida": 2071.0, "pend_final": 2905.0, "iad": 75.6, "tcl": 44.4}, {"id_orgao_julgador": 84860, "orgao_julgador": "VT DE ITAPEMA", "municipio_oj": "ITAPEMA", "tipo_unidade": "Vara", "segmento": "1ge", "entrada": 970.0, "saida": 996.0, "pend_final": 835.0, "iad": 102.7, "tcl": 33.7}, {"id_orgao_julgador": 85019, "orgao_julgador": "GAB. DES. CESAR LUIZ PASOLD JÚNIOR", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "Gabinete Desemb.", "segmento": "2g", "entrada": 1630.0, "saida": 1480.0, "pend_final": 1014.0, "iad": 90.8, "tcl": 28.7}, {"id_orgao_julgador": 91818, "orgao_julgador": "CEJUSC 2º GRAU (APOIO 1º GRAU)", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "CEJUSC", "segmento": "1gc", "entrada": 164.0, "saida": 211.0, "pend_final": 17.0, "iad": 128.7, "tcl": 6.4}, {"id_orgao_julgador": 91818, "orgao_julgador": "CEJUSC 2º GRAU (APOIO 1º GRAU)", "municipio_oj": "FLORIANOPOLIS", "tipo_unidade": "CEJUSC", "segmento": "1ge", "entrada": 82.0, "saida": 92.0, "pend_final": 7.0, "iad": 112.2, "tcl": 5.0}];
+
+// ── ESTADO ────────────────────────────────────────────────────────────────
+var segs    = new Set(['1gc']);
+var tipos   = new Set();
+var sortKey = 'nome';
+var sortDir = 'asc';
+
+// ── CONSTANTES ────────────────────────────────────────────────────────────
+var SEG_LABEL = {'1gc':'1º Grau Conhecimento','1ge':'1º Grau Execução','2g':'2º Grau'};
+var SEG_COR   = {'1gc':'at-1gc','1ge':'at-1ge','2g':'at-2g'};
+
+var COLS = [
+  {key:'nome',   label:'Órgão Julgador',      align:'left',  nosort:false},
+  {key:'muni',   label:'Município',            align:'left',  nosort:false},
+  {key:'tipo',   label:'Tipo',                 align:'left',  nosort:true },
+  {key:'entrada',label:'Entrada',              align:'right', nosort:false},
+  {key:'saida',  label:'Saída',                align:'right', nosort:false},
+  {key:'pend',   label:'Pend. Líquido',        align:'right', nosort:false},
+  {key:'iad',    label:'IAD',                  align:'left',  nosort:false},
+  {key:'tcl',    label:'TCL',                  align:'left',  nosort:false},
+  {key:'gap100', label:'Gap IAD 100%',  align:'right', nosort:false},
+  {key:'gap90',  label:'Gap IAD 90%',   align:'right', nosort:false},
+  {key:'gaptcl', label:'Gap TCL <25%',  align:'right', nosort:false},
+  {key:'pont',   label:'Pontuação',     align:'center',nosort:true },
+];
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+function fmt(v, d) {
+  if (v == null) return '–';
+  d = d != null ? d : 1;
+  return Number(v).toLocaleString('pt-BR', {minimumFractionDigits:d, maximumFractionDigits:d});
+}
+function fmtN(v) {
+  if (v == null || v === 0) return '–';
+  return Number(v).toLocaleString('pt-BR', {maximumFractionDigits:0});
+}
+function iadCls(v) { return v==null?'null':v>=100?'good':v>=80?'warn':'bad'; }
+function tclCls(v) { return v==null?'null':v<=35?'good':v<=50?'warn':'bad'; }
+function tipoBadge(t) {
+  if (t === 'Vara') return 'tbadge tb-vara';
+  if (t.indexOf('Gabinete') >= 0) return 'tbadge tb-gab';
+  if (t === 'CEJUSC') return 'tbadge tb-cejusc';
+  return 'tbadge tb-outro';
+}
+function pontua(iad, tcl) {
+  if (iad == null) return false;
+  if (iad >= 100.0) return true;
+  if (iad >= 90.0 && tcl != null && tcl < 25.0) return true;
+  return false;
+}
+// GAP IAD 100%: saídas que faltaram para IAD = 100%
+function calcGap100(entrada, saida) {
+  if (entrada == null || saida == null) return null;
+  return Math.max(0, Math.round(entrada - saida));
+}
+
+// GAP IAD 90%: saídas que faltaram para IAD = 90%
+function calcGap90(entrada, saida) {
+  if (entrada == null || saida == null) return null;
+  return Math.max(0, Math.round(entrada * 0.9 - saida));
+}
+
+// GAP TCL 25%: saídas adicionais necessárias para TCL = 25%
+// Gap = pend - (pend + saida) / 4
+function calcGapTCL(saida, pend) {
+  if (saida == null || pend == null) return null;
+  return Math.max(0, Math.round(pend - (pend + saida) / 4));
+}
+
+// 
+
+// ── TIPOS DISPONÍVEIS ─────────────────────────────────────────────────────
+function tiposDisponiveis() {
+  var s = new Set();
+  for (var i = 0; i < RAW.length; i++) {
+    if (segs.has(RAW[i].segmento)) s.add(RAW[i].tipo_unidade);
+  }
+  return Array.from(s).sort();
+}
+
+// ── TABS DE SEGMENTO ──────────────────────────────────────────────────────
+document.getElementById('seg-tabs').addEventListener('click', function(e) {
+  var btn = e.target.closest('.seg-tab');
+  if (!btn) return;
+  var s = btn.dataset.seg;
+  if (segs.has(s)) {
+    if (segs.size === 1) return;
+    segs.delete(s);
+    btn.className = 'seg-tab';
+  } else {
+    segs.add(s);
+    btn.className = 'seg-tab ' + SEG_COR[s];
+  }
+  // Atualizar tipos: manter os que ainda existem + adicionar novos
+  var disp = new Set(tiposDisponiveis());
+  var novo = new Set();
+  tipos.forEach(function(t) { if (disp.has(t)) novo.add(t); });
+  disp.forEach(function(t) { novo.add(t); });
+  tipos = novo;
+  buildTipos();
+  sortKey = 'nome'; sortDir = 'asc';
+  render();
+});
+
+// ── CHECKBOXES DE TIPO ────────────────────────────────────────────────────
+function buildTipos() {
+  var wrap = document.getElementById('tipo-wrap');
+  wrap.innerHTML = '';
+  var lista = tiposDisponiveis();
+  for (var i = 0; i < lista.length; i++) {
+    (function(t) {
+      var pill = document.createElement('span');
+      pill.className = 'tipo-pill' + (tipos.has(t) ? ' on' : '');
+      pill.innerHTML = '<span class="pdot"></span>' + t;
+      pill.addEventListener('click', function() {
+        if (tipos.has(t)) { tipos.delete(t); pill.classList.remove('on'); }
+        else              { tipos.add(t);    pill.classList.add('on'); }
+        render();
+      });
+      wrap.appendChild(pill);
+    })(lista[i]);
+  }
+}
+
+document.getElementById('search').addEventListener('input', render);
+
+// ── FILTRO + AGREGAÇÃO ────────────────────────────────────────────────────
+function filtered() {
+  var q = document.getElementById('search').value.toLowerCase().trim();
+  var base = [];
+  for (var i = 0; i < RAW.length; i++) {
+    var r = RAW[i];
+    if (!segs.has(r.segmento)) continue;
+    if (!tipos.has(r.tipo_unidade)) continue;
+    if (q) {
+      var nome = r.orgao_julgador.toLowerCase();
+      var muni = (r.municipio_oj || '').toLowerCase();
+      if (nome.indexOf(q) < 0 && muni.indexOf(q) < 0) continue;
+    }
+    base.push(r);
+  }
+
+  if (segs.size === 1) return base;
+
+  // Múltiplos segmentos: 1 linha por unidade (somatório)
+  var map = {};
+  for (var j = 0; j < base.length; j++) {
+    var r = base[j];
+    var id = r.id_orgao_julgador;
+    if (!map[id]) {
+      map[id] = {
+        id_orgao_julgador: id,
+        orgao_julgador: r.orgao_julgador,
+        municipio_oj:   r.municipio_oj,
+        tipo_unidade:   r.tipo_unidade,
+        segmento: 'multi',
+        entrada: 0, saida: 0, pend_final: 0, iad: null, tcl: null
+      };
+    }
+    map[id].entrada    += r.entrada    || 0;
+    map[id].saida      += r.saida      || 0;
+    map[id].pend_final += r.pend_final || 0;
+  }
+
+  var result = [];
+  for (var id in map) {
+    var r = map[id];
+    r.iad = r.entrada > 0 ? Math.round(r.saida   / r.entrada * 1000) / 10 : null;
+    r.tcl = (r.pend_final + r.saida) > 0
+      ? Math.round(r.pend_final / (r.pend_final + r.saida) * 1000) / 10 : null;
+    result.push(r);
+  }
+  return result;
+}
+
+// ── ORDENAÇÃO ─────────────────────────────────────────────────────────────
+function sortedData(data) {
+  return data.slice().sort(function(a, b) {
+    var va, vb;
+    if (sortKey === 'nome') { va = a.orgao_julgador || ''; vb = b.orgao_julgador || ''; }
+    else if (sortKey === 'muni') { va = a.municipio_oj || ''; vb = b.municipio_oj || ''; }
+    else if (sortKey === 'pend') { va = a.pend_final != null ? a.pend_final : -1; vb = b.pend_final != null ? b.pend_final : -1; }
+    else if (sortKey === 'gap100') {
+      va = calcGap100(a.entrada, a.saida); va = va != null ? va : 999999999;
+      vb = calcGap100(b.entrada, b.saida); vb = vb != null ? vb : 999999999;
+    }
+    else if (sortKey === 'gap90') {
+      va = calcGap90(a.entrada, a.saida); va = va != null ? va : 999999999;
+      vb = calcGap90(b.entrada, b.saida); vb = vb != null ? vb : 999999999;
+    }
+    else if (sortKey === 'gaptcl') {
+      va = calcGapTCL(a.saida, a.pend_final); va = va != null ? va : 999999999;
+      vb = calcGapTCL(b.saida, b.pend_final); vb = vb != null ? vb : 999999999;
+    }
+    else { va = a[sortKey] != null ? a[sortKey] : -1; vb = b[sortKey] != null ? b[sortKey] : -1; }
+    if (typeof va === 'string') return sortDir === 'asc' ? va.localeCompare(vb,'pt-BR') : vb.localeCompare(va,'pt-BR');
+    return sortDir === 'asc' ? va - vb : vb - va;
+  });
+}
+
+// ── CABEÇALHO DA TABELA ───────────────────────────────────────────────────
+function buildHead() {
+  var tr = document.getElementById('thead-row');
+  var html = '';
+  for (var i = 0; i < COLS.length; i++) {
+    var c = COLS[i];
+    if (c.nosort) {
+      html += '<th style="text-align:' + c.align + '">' + c.label + '</th>';
+    } else {
+      var cls = sortKey === c.key ? sortDir : '';
+      html += '<th class="' + cls + '" data-key="' + c.key + '" style="text-align:' + c.align + '">' + c.label + '</th>';
+    }
+  }
+  tr.innerHTML = html;
+  var ths = tr.querySelectorAll('th[data-key]');
+  for (var j = 0; j < ths.length; j++) {
+    (function(th) {
+      th.addEventListener('click', function() {
+        var k = th.dataset.key;
+        if (sortKey === k) { sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
+        else { sortKey = k; sortDir = (k === 'nome' || k === 'muni') ? 'asc' : 'desc'; }
+        render();
+      });
+    })(ths[j]);
+  }
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function render() {
+  var data = sortedData(filtered());
+  buildHead();
+
+  // Título
+  var segLbls = Array.from(segs).map(function(s) { return SEG_LABEL[s]; }).join(' + ');
+  document.getElementById('tbl-title').textContent = segLbls.toUpperCase() + ' · ÓRGÃOS JULGADORES';
+  document.getElementById('tbl-count').textContent = data.length + ' unidades';
+
+  // Totais para KPIs
+  var ENT = 0, SAI = 0, PEND = 0;
+  for (var i = 0; i < data.length; i++) {
+    ENT  += data[i].entrada    || 0;
+    SAI  += data[i].saida      || 0;
+    PEND += data[i].pend_final || 0;
+  }
+  var iadG = ENT  > 0 ? SAI  / ENT  * 100 : null;
+  var tclG = (PEND + SAI) > 0 ? PEND / (PEND + SAI) * 100 : null;
+
+  // KPIs
+  var kpiEl = document.getElementById('kpi-grid');
+  kpiEl.innerHTML =
+    '<div class="kpi c-blue"><div class="kpi-lbl">Entrada</div><div class="kpi-lbl2">ago/2025–fev/2026</div><div class="kpi-val">' + fmtN(ENT) + '</div></div>' +
+    '<div class="kpi c-red"><div class="kpi-lbl">Saída</div><div class="kpi-lbl2">ago/2025–fev/2026</div><div class="kpi-val">' + fmtN(SAI) + '</div></div>' +
+    '<div class="kpi c-amber"><div class="kpi-lbl">Pend. Líquido</div><div class="kpi-lbl2">fev/2026 (últ. mês)</div><div class="kpi-val">' + fmtN(PEND) + '</div></div>' +
+    '<div class="kpi c-teal"><div class="kpi-lbl">IAD</div><div class="kpi-lbl2">ago/2025–fev/2026</div><div class="kpi-val ' + iadCls(iadG) + '">' + (iadG != null ? fmt(iadG) + '%' : '–') + '</div><div class="kpi-sub">meta ≥ 100%</div></div>' +
+    '<div class="kpi c-purple"><div class="kpi-lbl">TCL</div><div class="kpi-lbl2">mar/2025–fev/2026</div><div class="kpi-val ' + tclCls(tclG) + '">' + (tclG != null ? fmt(tclG) + '%' : '–') + '</div><div class="kpi-sub">menor = melhor</div></div>';
+
+  // Cards de pontuação
+  var nSim = 0;
+  for (var i = 0; i < data.length; i++) {
+    if (pontua(data[i].iad, data[i].tcl)) nSim++;
+  }
+  var indice = data.length > 0 ? nSim / data.length * 100 : null;
+  var pontEl = document.getElementById('pont-bar');
+  pontEl.innerHTML =
+    '<div class="pont-card"><span class="pont-icon">🏛️</span><div class="pont-info"><span class="pont-lbl">Total de Unidades</span><span class="pont-val">' + data.length + '</span><span class="pont-sub">no filtro atual</span></div></div>' +
+    '<div class="pont-card"><span class="pont-icon">✅</span><div class="pont-info"><span class="pont-lbl">Unidades que Pontuam</span><span class="pont-val dest">' + nSim + '</span><span class="pont-sub">IAD ≥ 100% ou IAD ≥ 90% + TCL &lt; 25%</span></div></div>' +
+    '<div class="pont-card"><span class="pont-icon">📊</span><div class="pont-info"><span class="pont-lbl">Índice de Pontuação</span><span class="pont-val dest">' + (indice != null ? fmt(indice) + '%' : '–') + '</span><span class="pont-sub">unidades que pontuam / total</span></div></div>';
+
+  // Tabela vazia
+  var tbody = document.getElementById('tbody');
+  if (data.length === 0) {
+    tbody.innerHTML = '<tr class="empty"><td colspan="12">Nenhuma unidade encontrada.</td></tr>';
+    return;
+  }
+
+  // Máximos para barras
+  var maxIAD = 120, maxTCL = 100;
+  for (var i = 0; i < data.length; i++) {
+    if (data[i].iad && data[i].iad > maxIAD) maxIAD = data[i].iad;
+    if (data[i].tcl && data[i].tcl > maxTCL) maxTCL = data[i].tcl;
+  }
+
+  // Linhas
+  var rows = '';
+  for (var i = 0; i < data.length; i++) {
+    var r   = data[i];
+    var ic  = iadCls(r.iad);
+    var tc  = tclCls(r.tcl);
+    var iW  = r.iad != null ? Math.min(r.iad / maxIAD * 100, 100).toFixed(1) : 0;
+    var tW  = r.tcl != null ? Math.min(r.tcl / maxTCL * 100, 100).toFixed(1) : 0;
+    var g100  = calcGap100(r.entrada, r.saida);
+    var g90   = calcGap90(r.entrada, r.saida);
+    var gTCL  = calcGapTCL(r.saida, r.pend_final);
+    function mkGapCell(v, cor) {
+      return v == null ? '–'
+        : v === 0
+          ? '<span style="font-size:.72rem;color:var(--green);font-weight:700">✓</span>'
+          : '<span style="font-family:DM Mono,monospace;font-size:.82rem;font-weight:600;color:' + cor + '">+' + Number(v).toLocaleString('pt-BR') + '</span>';
+    }
+    var g100Cell = mkGapCell(g100, 'var(--amber)');
+    var g90Cell  = mkGapCell(g90,  'var(--amber)');
+    var gTCLCell = mkGapCell(gTCL, 'var(--red)');
+    var simCell = pontua(r.iad, r.tcl)
+      ? '<span style="display:inline-block;padding:2px 10px;border-radius:4px;font-size:.72rem;font-weight:700;background:#DCFCE7;color:var(--green)">SIM</span>'
+      : '<span style="color:var(--light)">–</span>';
+
+    rows +=
+      '<tr>' +
+      '<td class="nome">' + r.orgao_julgador + '</td>' +
+      '<td class="muni">' + (r.municipio_oj || '–') + '</td>' +
+      '<td><span class="' + tipoBadge(r.tipo_unidade) + '">' + r.tipo_unidade + '</span></td>' +
+      '<td class="num dest">' + fmtN(r.entrada) + '</td>' +
+      '<td class="num dest">' + fmtN(r.saida) + '</td>' +
+      '<td class="num dest">' + fmtN(r.pend_final) + '</td>' +
+      '<td class="ind-cell"><div class="ind-row"><span class="ind-val ' + ic + '">' + (r.iad != null ? fmt(r.iad) + '%' : '–') + '</span><div class="bar"><div class="bar-fill ' + ic + '" style="width:' + iW + '%"></div></div></div></td>' +
+      '<td class="ind-cell"><div class="ind-row"><span class="ind-val ' + tc + '">' + (r.tcl != null ? fmt(r.tcl) + '%' : '–') + '</span><div class="bar"><div class="bar-fill ' + tc + '" style="width:' + tW + '%"></div></div></div></td>' +
+      '<td class="num">' + g100Cell + '</td>' +
+      '<td class="num">' + g90Cell  + '</td>' +
+      '<td class="num">' + gTCLCell + '</td>' +
+      '<td style="text-align:center">' + simCell + '</td>' +
+      '</tr>';
+  }
+  tbody.innerHTML = rows;
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+tipos = new Set(tiposDisponiveis());
+buildTipos();
+render();
+</script>
+</body>
+</html>
